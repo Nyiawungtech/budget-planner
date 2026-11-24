@@ -13,7 +13,17 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const dist = path.join(root, "dist");
 const routes = ["/", "/budget", "/income", "/expenses", "/savings", "/profile"];
 // Physical entry pages make fresh clean URLs work even on hosts without an SPA rewrite.
-for (const route of [...routes.slice(1), "/spending", "/overview"]) {
+for (const route of [
+  ...routes.slice(1),
+  "/spending",
+  "/overview",
+  "/login",
+  "/signup",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/callback",
+]) {
   const directory = path.join(dist, route.slice(1));
   await mkdir(directory, { recursive: true });
   await copyFile(

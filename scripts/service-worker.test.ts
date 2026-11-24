@@ -101,6 +101,10 @@ describe("PWA shell caching and clean navigation", () => {
     const w = worker();
     for (const path of [
       "/signin-with-chatgpt",
+      "/login",
+      "/signup",
+      "/auth/callback?code=test-code",
+      "/reset-password?code=test-code",
       "/api/profile",
       "https://elsewhere.example/income",
     ])

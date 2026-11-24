@@ -9,7 +9,7 @@ import "@fontsource/manrope/latin-500.css";
 import "@fontsource/manrope/latin-600.css";
 import "@fontsource/manrope/latin-700.css";
 import "@fontsource/manrope/latin-800.css";
-import App from "./App";
+import App from "./AccountApp";
 import "./styles.css";
 setupIonicReact({ mode: "ios" });
 ReactDOM.createRoot(document.getElementById("root")!).render(

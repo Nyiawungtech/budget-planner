@@ -1,5 +1,24 @@
 export type Route =
-  "overview" | "budget" | "income" | "expenses" | "savings" | "profile";
+  | "overview"
+  | "budget"
+  | "income"
+  | "expenses"
+  | "savings"
+  | "profile"
+  | "login"
+  | "signup"
+  | "verify-email"
+  | "forgot-password"
+  | "reset-password"
+  | "auth-callback";
+export const authRoutes = new Set<Route>([
+  "login",
+  "signup",
+  "verify-email",
+  "forgot-password",
+  "reset-password",
+  "auth-callback",
+]);
 export const routePaths: Record<Route, string> = {
   overview: "/",
   budget: "/budget",
@@ -7,6 +26,12 @@ export const routePaths: Record<Route, string> = {
   expenses: "/expenses",
   savings: "/savings",
   profile: "/profile",
+  login: "/login",
+  signup: "/signup",
+  "verify-email": "/verify-email",
+  "forgot-password": "/forgot-password",
+  "reset-password": "/reset-password",
+  "auth-callback": "/auth/callback",
 };
 const aliases: Record<string, Route> = {
   overview: "overview",
@@ -24,7 +49,8 @@ export function resolveRoute(input: string) {
   const route =
     legacy ||
     (Object.entries(routePaths).find(([, path]) => path === pathname)?.[0] as
-      Route | undefined) ||
+      | Route
+      | undefined) ||
     aliases[pathname.slice(1)] ||
     "overview";
   const href = routePaths[route] + url.search;
@@ -40,7 +66,7 @@ export function currentRoute(): Route {
   return result.route;
 }
 export function navigate(route: Route) {
-  const href = routePaths[route] + window.location.search;
+  const href = routePaths[route];
   if (window.location.pathname + window.location.search !== href)
     history.pushState(null, "", href);
   window.dispatchEvent(new Event("budgetflow:navigation"));

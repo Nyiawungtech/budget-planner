@@ -14,7 +14,6 @@ import { useWorkspace } from "./App";
 import { CategoryIcon, Empty, Field, Modal, Progress, icons } from "./ui";
 import {
   blankMonth,
-  blankState,
   categorySpent,
   colors,
   copyBudgets,
@@ -56,7 +55,6 @@ export type DialogState = {
     | "goal-history"
     | "release-contribution"
     | "profile"
-    | "setup"
     | "reset-demo"
     | "about"
     | "install";
@@ -240,7 +238,6 @@ export function Dialogs({ dialog, onClose }: DialogProps) {
     case "goal-history":
       return <GoalHistory {...common} />;
     case "profile":
-    case "setup":
       return <ProfileForm {...common} />;
     case "install":
       return (
@@ -269,8 +266,8 @@ export function Dialogs({ dialog, onClose }: DialogProps) {
               </p>
             </div>
             <small>
-              Your profile and budget data remain in this browser in the current
-              preview.
+              Log in to access your saved plan. Installing the app does not move
+              money or connect to a bank.
             </small>
             <button className="primary" onClick={onClose}>
               Got it
@@ -294,11 +291,11 @@ export function Dialogs({ dialog, onClose }: DialogProps) {
               paychecks, record spending, and give your savings a purpose.
             </p>
             <div className="soft-box">
-              <b>This is a working interactive concept.</b>
+              <b>A private plan, wherever you log in.</b>
               <p>
-                Profiles and data stay in this browser. Account sign-in, cloud
-                sync, and native app packaging will be connected in the next
-                build.
+                Log in to save your profile, monthly plans, and goals to your
+                account. The example uses sample data and stays separate from
+                your personal plan.
               </p>
             </div>
             <p>
@@ -306,8 +303,7 @@ export function Dialogs({ dialog, onClose }: DialogProps) {
               between bank accounts.
             </p>
             <small>
-              BudgetFlow is a working name. The app uses the same Ionic React
-              and TypeScript foundation as Settle Up.
+              Plan your income, track expenses, and make room for your goals.
             </small>
             <button className="primary" onClick={onClose}>
               Back to my plan
@@ -1301,8 +1297,7 @@ function GoalHistory({ dialog, onClose }: DialogProps) {
 }
 
 function ProfileForm({ dialog, onClose }: DialogProps) {
-  const { s, edit, replace } = useWorkspace();
-  const setup = dialog.type === "setup";
+  const { s, edit } = useWorkspace();
   const zones = [
     ...new Set([
       s.profile.timezone,
@@ -1318,41 +1313,27 @@ function ProfileForm({ dialog, onClose }: DialogProps) {
   ];
   return (
     <Modal
-      title={
-        setup ? "Your money. Your little plan." : "Make it feel like yours."
-      }
-      subtitle={
-        setup ? "Create your profile for this preview" : "Edit your profile"
-      }
+      title="Make it feel like yours."
+      subtitle="Edit your profile"
       onClose={onClose}
     >
       <Form
         onClose={onClose}
-        label={setup ? "Create my workspace" : "Save profile"}
+        label="Save profile"
         onSave={(data) => {
           const name = str(data, "name");
           if (!name) throw new Error("What should we call you?");
           const openingSavings = toCents(str(data, "amount"));
           const timezone = str(data, "timezone");
-          if (setup) {
-            const next = blankState(name, timezone);
-            next.profile.openingSavings = openingSavings;
-            next.profile.timezone = timezone;
-            next.profile.theme = s.profile.theme;
-            replace(
-              next,
-              "Welcome to your own little plan. Start by adding your income.",
-            );
-          } else
-            edit((d) => {
-              Object.assign(d.profile, { name, openingSavings, timezone });
-            }, "Your profile is up to date.");
+          edit((d) => {
+            Object.assign(d.profile, { name, openingSavings, timezone });
+          }, "Your profile is up to date.");
         }}
       >
         <Field label="What should we call you?">
           <input
             name="name"
-            defaultValue={setup ? "" : s.profile.name}
+            defaultValue={s.profile.name}
             placeholder="Your first name"
             maxLength={40}
             autoComplete="given-name"
@@ -1363,7 +1344,7 @@ function ProfileForm({ dialog, onClose }: DialogProps) {
           label="Starting savings"
           hint="Money you already have saved, before any monthly income in BudgetFlow."
         >
-          <Amount cents={setup ? 0 : s.profile.openingSavings} />
+          <Amount cents={s.profile.openingSavings} />
         </Field>
         <Field label="Your time zone">
           <select name="timezone" defaultValue={s.profile.timezone}>
@@ -1375,9 +1356,9 @@ function ProfileForm({ dialog, onClose }: DialogProps) {
           </select>
         </Field>
         <div className="soft-box small">
-          {setup ? "The example is replaced with a clean workspace. " : ""}Your
-          profile and plans are saved in this browser during the preview.
-          Account sign-in and cloud sync come with the production build.
+          {s.mode === "demo"
+            ? "Changes here apply to the example. Create an account to start your own plan."
+            : "Your profile and plans are saved privately to your account."}
         </div>
       </Form>
     </Modal>

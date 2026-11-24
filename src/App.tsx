@@ -5,6 +5,8 @@ import {
   useEffect,
   useState,
   type ReactNode,
+  type Dispatch,
+  type SetStateAction,
 } from "react";
 import {
   LayoutDashboard,
@@ -55,7 +57,7 @@ import {
   type Paycheck,
   type Category,
 } from "./lib/domain";
-import { demoState } from "./lib/demo";
+import { useAccount } from "./lib/account-context";
 import { Dialogs, type DialogState } from "./dialogs";
 import { currentRoute, navigate, type Route } from "./lib/navigation";
 import { usePwa } from "./lib/pwa";
@@ -67,30 +69,6 @@ const navigation = [
   ["expenses", "Expenses", ReceiptText],
   ["savings", "Savings", Sprout],
 ] as const;
-const storageKey = "budgetflow.workspace.v1";
-function loadState(): State {
-  try {
-    const raw =
-      localStorage.getItem(storageKey) ||
-      localStorage.getItem("tend.budget.v1");
-    if (raw) {
-      const s = JSON.parse(raw);
-      if (
-        s.version === 1 &&
-        s.profile &&
-        s.months &&
-        s.months[s.selectedMonth] &&
-        Array.isArray(s.goals) &&
-        Array.isArray(s.sources) &&
-        Array.isArray(s.contributions)
-      )
-        return s;
-    }
-  } catch {
-    /* Recover to the example without logging private data. */
-  }
-  return demoState();
-}
 type Workspace = {
   s: State;
   m: Month;
@@ -109,44 +87,20 @@ type Workspace = {
 const Context = createContext<Workspace>(null!);
 export const useWorkspace = () => useContext(Context);
 
-export default function App() {
-  const [s, setS] = useState(loadState);
+export default function App({
+  s,
+  setS,
+}: {
+  s: State;
+  setS: Dispatch<SetStateAction<State>>;
+}) {
+  const account = useAccount();
   const pwa = usePwa();
   const [route, setRoute] = useState<Route>(currentRoute);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [toast, setToast] = useState("");
   const [hidden, setHidden] = useState(false);
-  const [storageError, setStorageError] = useState(false);
   const close = useCallback(() => setDialog(null), []);
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(s));
-      setStorageError(false);
-    } catch {
-      setStorageError(true);
-    }
-  }, [s]);
-  useEffect(() => {
-    const sync = (e: StorageEvent) => {
-      if (e.key !== storageKey || !e.newValue) return;
-      try {
-        const next = JSON.parse(e.newValue);
-        if (
-          next.version === 1 &&
-          next.profile &&
-          next.months?.[next.selectedMonth] &&
-          Array.isArray(next.goals) &&
-          Array.isArray(next.sources) &&
-          Array.isArray(next.contributions)
-        )
-          setS(next);
-      } catch {
-        /* Ignore incomplete data from another tab. */
-      }
-    };
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
   useEffect(() => {
     const listener = () => {
       setRoute(currentRoute());
@@ -246,19 +200,33 @@ export default function App() {
       </a>
       <div className="preview-banner">
         <span>
-          <span className="preview-pill">INTERACTIVE PREVIEW</span>
+          <span className="preview-pill">
+            {s.mode === "demo" ? "EXAMPLE PLAN" : "YOUR PRIVATE PLAN"}
+          </span>
           <span className="banner-detail">
             {s.mode === "demo"
               ? "Sample data · Example date: Dec 12, 2026"
-              : "Your plan · Saved in this browser"}
+              : account.status === "saved"
+                ? "All changes saved"
+                : account.status === "saving"
+                  ? "Saving your changes…"
+                  : "Changes need attention"}
           </span>
         </span>
         <button
           onClick={() =>
-            setDialog({ type: s.mode === "demo" ? "setup" : "about" })
+            s.mode === "demo"
+              ? account.email
+                ? account.returnToPlan()
+                : go("signup")
+              : go("profile")
           }
         >
-          {s.mode === "demo" ? "Start my plan" : "About this preview"}
+          {s.mode === "demo"
+            ? account.email
+              ? "Back to my plan"
+              : "Start my plan"
+            : "My account"}
         </button>
       </div>
       <aside className="sidebar">
@@ -416,13 +384,20 @@ export default function App() {
             </button>
           </div>
         )}
-        {storageError && (
-          <div className="notice danger">
+        {account.error && (
+          <div className="notice danger" role="alert">
             <CircleAlert size={19} />
-            <p>
-              This browser could not save your changes. Export your plan from
-              Profile before closing this page.
-            </p>
+            <p>{account.error}</p>
+            <button
+              className="text-button"
+              onClick={
+                account.status === "conflict" ? account.reload : account.retry
+              }
+            >
+              {account.status === "conflict"
+                ? "Reload saved plan"
+                : "Retry save"}
+            </button>
           </div>
         )}
         {m.closed && route !== "profile" && (
@@ -1608,7 +1583,9 @@ function Savings() {
 }
 
 function Profile() {
-  const { s, cash, edit, open, notify, installApp, installed } = useWorkspace();
+  const { s, cash, edit, open, notify, installApp, installed, go } =
+    useWorkspace();
+  const account = useAccount();
   function exportData() {
     const blob = new Blob([JSON.stringify(s, null, 2)], {
       type: "application/json",
@@ -1691,16 +1668,44 @@ function Profile() {
         </section>
         <section className="panel preview-details">
           <CategoryIcon name="shield" />
-          <h2>Your workspace in this preview</h2>
+          <h2>
+            {s.mode === "demo"
+              ? "A little look at BudgetFlow"
+              : "Your private account"}
+          </h2>
           <p>
-            Your profile, budgets, and changes are saved in this browser.
-            Account sign-in and cross-device sync will be connected in the
-            production build.
+            {s.mode === "demo"
+              ? "You’re exploring sample data. Create an account for your own plan."
+              : "Your budgets, income, expenses, and savings are saved to your account and available when you log in on another device."}
           </p>
           <button className="secondary" onClick={exportData}>
             <Download size={17} /> Export my plan
           </button>
-          <small>BudgetFlow is a working name for this concept.</small>
+          {account.email && (
+            <>
+              <p className="account-email">{account.email}</p>
+              <small role="status">
+                {account.status === "saved"
+                  ? "All changes saved"
+                  : account.status === "saving"
+                    ? "Saving changes…"
+                    : "Some changes have not synced"}
+              </small>
+              <button
+                className="secondary logout-button"
+                disabled={account.busy}
+                onClick={() => void account.logout()}
+              >
+                <LockKeyhole size={17} />
+                {account.busy ? "One moment…" : "Log out"}
+              </button>
+            </>
+          )}
+          {!account.email && (
+            <button className="primary" onClick={() => go("login")}>
+              Log in
+            </button>
+          )}
         </section>
       </div>
       <section className="panel workspace-actions">
@@ -1712,18 +1717,29 @@ function Profile() {
           </h3>
           <p>
             {s.mode === "demo"
-              ? "Create a local profile and start with a clean month."
-              : "Export your plan first. Switching replaces this browser’s current workspace."}
+              ? account.email
+                ? "Your personal plan is waiting whenever you’re ready."
+                : "Create an account and start with a clean month."
+              : "Explore sample data, then return to your saved plan."}
           </p>
         </div>
         <button
           className="primary"
+          disabled={account.busy}
           onClick={() =>
-            open({ type: s.mode === "demo" ? "setup" : "reset-demo" })
+            s.mode === "demo"
+              ? account.email
+                ? account.returnToPlan()
+                : go("signup")
+              : void account.showDemo()
           }
         >
           {s.mode === "demo" ? <Plus size={17} /> : <RotateCcw size={17} />}
-          {s.mode === "demo" ? "Start my plan" : "Load example"}
+          {s.mode === "demo"
+            ? account.email
+              ? "Back to my plan"
+              : "Start my plan"
+            : "Explore example"}
         </button>
         {s.mode === "demo" && (
           <button
@@ -1734,6 +1750,24 @@ function Profile() {
           </button>
         )}
       </section>
+      {s.mode === "personal" && account.hasLegacy && (
+        <section className="panel workspace-actions">
+          <div>
+            <h3>Your previous browser plan</h3>
+            <p>
+              You have a plan from an earlier version on this browser. Import it
+              into this account when you’re ready.
+            </p>
+          </div>
+          <button
+            className="secondary"
+            disabled={account.busy}
+            onClick={account.importLegacy}
+          >
+            Import previous plan
+          </button>
+        </section>
+      )}
       <section className="panel install-panel">
         <CategoryIcon name="wallet" />
         <div className="grow">

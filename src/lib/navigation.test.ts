@@ -9,6 +9,20 @@ describe("clean routes and existing bookmarks", () => {
     ["/expenses", "expenses", "/expenses"],
     ["/savings", "savings", "/savings"],
     ["/profile", "profile", "/profile"],
+    ["/login", "login", "/login"],
+    ["/signup", "signup", "/signup"],
+    ["/verify-email", "verify-email", "/verify-email"],
+    ["/forgot-password", "forgot-password", "/forgot-password"],
+    [
+      "/reset-password?code=test-code",
+      "reset-password",
+      "/reset-password?code=test-code",
+    ],
+    [
+      "/auth/callback?code=test-code",
+      "auth-callback",
+      "/auth/callback?code=test-code",
+    ],
   ])("opens %s directly without a hash", (input, route, href) => {
     expect(resolveRoute(input)).toEqual({ route, href, replace: false });
   });
