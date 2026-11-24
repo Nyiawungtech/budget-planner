@@ -38,8 +38,9 @@ import {
   RotateCcw,
   FolderOpen,
   Smartphone,
+  Camera,
 } from "lucide-react";
-import { Brand, CategoryIcon, Empty, Progress } from "./ui";
+import { AvatarFace, Brand, CategoryIcon, Empty, Progress } from "./ui";
 import {
   blankMonth,
   categorySpent,
@@ -188,57 +189,244 @@ export default function App({
   }
   return (
     <Context.Provider value={ui}>
-      <a
-        className="skip-link"
-        href="#main-content"
-        onClick={(e) => {
-          e.preventDefault();
-          document.getElementById("main-content")?.focus();
-        }}
-      >
-        Skip to content
-      </a>
-      <div className="preview-banner">
-        <span>
-          <span className="preview-pill">
-            {s.mode === "demo" ? "EXAMPLE PLAN" : "YOUR PRIVATE PLAN"}
-          </span>
-          <span className="banner-detail">
-            {s.mode === "demo"
-              ? "Sample data · Example date: Dec 12, 2026"
-              : account.status === "saved"
-                ? "All changes saved"
-                : account.status === "saving"
-                  ? "Saving your changes…"
-                  : "Changes need attention"}
-          </span>
-        </span>
-        <button
-          onClick={() =>
-            s.mode === "demo"
-              ? account.email
-                ? account.returnToPlan()
-                : go("signup")
-              : go("profile")
-          }
+      <div className={`workspace workspace-${s.mode}`}>
+        <a
+          className="skip-link"
+          href="#main-content"
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById("main-content")?.focus();
+          }}
         >
-          {s.mode === "demo"
-            ? account.email
-              ? "Back to my plan"
-              : "Start my plan"
-            : "My account"}
-        </button>
-      </div>
-      <aside className="sidebar">
-        <button
-          className="brand-button"
-          onClick={() => go("overview")}
-          aria-label="BudgetFlow home"
-        >
-          <Brand />
-        </button>
-        <span className="workspace-label">A LITTLE MORE INTENTION</span>
-        <nav aria-label="Main navigation">
+          Skip to content
+        </a>
+        {s.mode === "demo" && (
+          <div className="preview-banner">
+            <span>
+              <span className="preview-pill">EXAMPLE PLAN</span>
+              <span className="banner-detail">
+                Sample data · Example date: Dec 12, 2026
+              </span>
+            </span>
+            <button
+              onClick={() =>
+                account.email ? account.returnToPlan() : go("signup")
+              }
+            >
+              {account.email ? "Back to my plan" : "Start my plan"}
+            </button>
+          </div>
+        )}
+        <aside className="sidebar">
+          <button
+            className="brand-button"
+            onClick={() => go("overview")}
+            aria-label="BudgetFlow home"
+          >
+            <Brand />
+          </button>
+          <span className="workspace-label">A LITTLE MORE INTENTION</span>
+          <nav aria-label="Main navigation">
+            {navigation.map(([path, label, Icon]) => (
+              <button
+                key={path}
+                className={route === path ? "active" : ""}
+                aria-current={route === path ? "page" : undefined}
+                onClick={() => go(path)}
+              >
+                <Icon size={20} strokeWidth={1.8} />
+                {label}
+                {route === path && <span className="nav-marker" />}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-grow">
+            <div className="plant-drawing" aria-hidden="true">
+              <Sprout size={52} strokeWidth={1.2} />
+            </div>
+            <h3>
+              Small plans.
+              <br />
+              Bigger possibilities.
+            </h3>
+            <p>Make a little room for the life you want.</p>
+            <span className="tiny-line" />
+            {!pwa.installed && (
+              <button
+                className="sidebar-install"
+                onClick={() => void installApp()}
+              >
+                <Smartphone size={17} /> Install BudgetFlow
+              </button>
+            )}
+          </div>
+          <button
+            className={`profile-button ${route === "profile" ? "selected" : ""}`}
+            onClick={() => go("profile")}
+          >
+            <span className="avatar">
+              <AvatarFace name={s.profile.name} photo={s.profile.avatar} />
+            </span>
+            <span className="profile-copy">
+              <b>{s.profile.name}</b>
+              <small>
+                {s.mode === "demo" ? "Example workspace" : "Personal workspace"}
+              </small>
+            </span>
+            <MoreHorizontal size={19} />
+          </button>
+        </aside>
+        <header className="topbar">
+          <button
+            className="mobile-brand brand-button"
+            onClick={() => go("overview")}
+            aria-label="BudgetFlow home"
+          >
+            <Brand />
+          </button>
+          <div className="breadcrumb">
+            Your workspace<span>/</span>
+            <b>{current}</b>
+          </div>
+          <div className="top-actions">
+            <span className="top-date">{dateLabel(day, true)}</span>
+            <button
+              className="icon-button"
+              title={hidden ? "Show amounts" : "Hide amounts"}
+              aria-label={hidden ? "Show amounts" : "Hide amounts"}
+              onClick={() => setHidden(!hidden)}
+            >
+              {hidden ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+            <button
+              className="icon-button"
+              title="Change theme"
+              aria-label="Change color theme"
+              onClick={() =>
+                edit((d) => {
+                  d.profile.theme =
+                    document.documentElement.dataset.theme === "dark"
+                      ? "light"
+                      : "dark";
+                })
+              }
+            >
+              <Sun size={20} className="theme-sun" />
+              <Moon size={20} className="theme-moon" />
+            </button>
+            <button
+              className="avatar small-avatar"
+              aria-label="Your profile"
+              onClick={() => go("profile")}
+            >
+              <AvatarFace name={s.profile.name} photo={s.profile.avatar} />
+            </button>
+          </div>
+        </header>
+        <main id="main-content" className="main" tabIndex={-1}>
+          <div className="page-tools">
+            <div className="month-switcher">
+              <button
+                aria-label="Previous month"
+                className="icon-button"
+                onClick={() => chooseMonth(shiftMonth(m.key, -1))}
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <label className="month-input-label">
+                <CalendarDays size={17} />
+                <span className="month-full">{monthLabel(m.key)}</span>
+                <span className="month-short">{monthLabel(m.key, true)}</span>
+                <input
+                  type="month"
+                  value={m.key}
+                  onChange={(e) => {
+                    if (e.target.value) chooseMonth(e.target.value);
+                  }}
+                  aria-label="Planning month"
+                />
+              </label>
+              <button
+                aria-label="Next month"
+                className="icon-button"
+                onClick={() => chooseMonth(shiftMonth(m.key, 1))}
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+            <button
+              className="text-button new-month"
+              onClick={() =>
+                setDialog({ type: "month", month: shiftMonth(m.key, 1) })
+              }
+            >
+              <Plus size={16} /> New month
+            </button>
+          </div>
+          {pwa.updateReady && (
+            <div className="notice">
+              <Smartphone size={18} />
+              <p>A new version of BudgetFlow is ready.</p>
+              <button className="text-button" onClick={pwa.update}>
+                Update app
+              </button>
+            </div>
+          )}
+          {account.error && (
+            <div className="notice danger" role="alert">
+              <CircleAlert size={19} />
+              <p>{account.error}</p>
+              <button
+                className="text-button"
+                onClick={
+                  account.status === "conflict" ? account.reload : account.retry
+                }
+              >
+                {account.status === "conflict"
+                  ? "Reload saved plan"
+                  : "Retry save"}
+              </button>
+            </div>
+          )}
+          {m.closed && route !== "profile" && (
+            <div className="notice">
+              <LockKeyhole size={18} />
+              <p>
+                <b>This month is closed.</b> Its savings use received income and
+                recorded spending.
+              </p>
+              <button
+                className="text-button"
+                onClick={() => setDialog({ type: "reopen" })}
+              >
+                Reopen month
+              </button>
+            </div>
+          )}
+          <div key={route} className="page-enter">
+            {route === "overview" ? (
+              <Overview />
+            ) : route === "budget" ? (
+              <Budget />
+            ) : route === "income" ? (
+              <Income />
+            ) : route === "expenses" ? (
+              <Expenses />
+            ) : route === "savings" ? (
+              <Savings />
+            ) : (
+              <Profile />
+            )}
+          </div>
+          <footer className="page-footer">
+            <Leaf size={14} />
+            <span>A little planning. More room to live.</span>
+            <button onClick={() => setDialog({ type: "about" })}>
+              About BudgetFlow
+            </button>
+          </footer>
+        </main>
+        <nav className="mobile-nav" aria-label="Mobile navigation">
           {navigation.map(([path, label, Icon]) => (
             <button
               key={path}
@@ -246,235 +434,36 @@ export default function App({
               aria-current={route === path ? "page" : undefined}
               onClick={() => go(path)}
             >
-              <Icon size={20} strokeWidth={1.8} />
-              {label}
-              {route === path && <span className="nav-marker" />}
+              <Icon size={21} strokeWidth={route === path ? 2.2 : 1.7} />
+              <span>
+                {path === "budget"
+                  ? "Budget"
+                  : path === "income"
+                    ? "Income"
+                    : path === "savings"
+                      ? "Goals"
+                      : label}
+              </span>
             </button>
           ))}
         </nav>
-        <div className="sidebar-grow">
-          <div className="plant-drawing" aria-hidden="true">
-            <Sprout size={52} strokeWidth={1.2} />
-          </div>
-          <h3>
-            Small plans.
-            <br />
-            Bigger possibilities.
-          </h3>
-          <p>Make a little room for the life you want.</p>
-          <span className="tiny-line" />
-          {!pwa.installed && (
-            <button
-              className="sidebar-install"
-              onClick={() => void installApp()}
-            >
-              <Smartphone size={17} /> Install BudgetFlow
-            </button>
-          )}
-        </div>
-        <button
-          className={`profile-button ${route === "profile" ? "selected" : ""}`}
-          onClick={() => go("profile")}
-        >
-          <span className="avatar">
-            {s.profile.name.slice(0, 1).toUpperCase()}
-          </span>
-          <span className="profile-copy">
-            <b>{s.profile.name}</b>
-            <small>
-              {s.mode === "demo" ? "Example workspace" : "Personal workspace"}
-            </small>
-          </span>
-          <MoreHorizontal size={19} />
-        </button>
-      </aside>
-      <header className="topbar">
-        <button
-          className="mobile-brand brand-button"
-          onClick={() => go("overview")}
-          aria-label="BudgetFlow home"
-        >
-          <Brand />
-        </button>
-        <div className="breadcrumb">
-          Your workspace<span>/</span>
-          <b>{current}</b>
-        </div>
-        <div className="top-actions">
-          <span className="top-date">{dateLabel(day, true)}</span>
-          <button
-            className="icon-button"
-            title={hidden ? "Show amounts" : "Hide amounts"}
-            aria-label={hidden ? "Show amounts" : "Hide amounts"}
-            onClick={() => setHidden(!hidden)}
-          >
-            {hidden ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-          <button
-            className="icon-button"
-            title="Change theme"
-            aria-label="Change color theme"
-            onClick={() =>
-              edit((d) => {
-                d.profile.theme =
-                  document.documentElement.dataset.theme === "dark"
-                    ? "light"
-                    : "dark";
-              })
-            }
-          >
-            <Sun size={20} className="theme-sun" />
-            <Moon size={20} className="theme-moon" />
-          </button>
-          <button
-            className="avatar small-avatar"
-            aria-label="Your profile"
-            onClick={() => go("profile")}
-          >
-            {s.profile.name.slice(0, 1).toUpperCase()}
-          </button>
-        </div>
-      </header>
-      <main id="main-content" className="main" tabIndex={-1}>
-        <div className="page-tools">
-          <div className="month-switcher">
-            <button
-              aria-label="Previous month"
-              className="icon-button"
-              onClick={() => chooseMonth(shiftMonth(m.key, -1))}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <label className="month-input-label">
-              <CalendarDays size={17} />
-              <span className="month-full">{monthLabel(m.key)}</span>
-              <span className="month-short">{monthLabel(m.key, true)}</span>
-              <input
-                type="month"
-                value={m.key}
-                onChange={(e) => {
-                  if (e.target.value) chooseMonth(e.target.value);
-                }}
-                aria-label="Planning month"
-              />
-            </label>
-            <button
-              aria-label="Next month"
-              className="icon-button"
-              onClick={() => chooseMonth(shiftMonth(m.key, 1))}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-          <button
-            className="text-button new-month"
-            onClick={() =>
-              setDialog({ type: "month", month: shiftMonth(m.key, 1) })
-            }
-          >
-            <Plus size={16} /> New month
-          </button>
-        </div>
-        {pwa.updateReady && (
-          <div className="notice">
-            <Smartphone size={18} />
-            <p>A new version of BudgetFlow is ready.</p>
-            <button className="text-button" onClick={pwa.update}>
-              Update app
+        {dialog && (
+          <Dialogs
+            key={`${dialog.type}-${"id" in dialog ? dialog.id || "" : ""}`}
+            dialog={dialog}
+            onClose={close}
+          />
+        )}
+        {toast && (
+          <div className="toast" role="status">
+            <CircleCheck size={20} />
+            <span>{toast}</span>
+            <button aria-label="Dismiss message" onClick={() => setToast("")}>
+              <X size={17} />
             </button>
           </div>
         )}
-        {account.error && (
-          <div className="notice danger" role="alert">
-            <CircleAlert size={19} />
-            <p>{account.error}</p>
-            <button
-              className="text-button"
-              onClick={
-                account.status === "conflict" ? account.reload : account.retry
-              }
-            >
-              {account.status === "conflict"
-                ? "Reload saved plan"
-                : "Retry save"}
-            </button>
-          </div>
-        )}
-        {m.closed && route !== "profile" && (
-          <div className="notice">
-            <LockKeyhole size={18} />
-            <p>
-              <b>This month is closed.</b> Its savings use received income and
-              recorded spending.
-            </p>
-            <button
-              className="text-button"
-              onClick={() => setDialog({ type: "reopen" })}
-            >
-              Reopen month
-            </button>
-          </div>
-        )}
-        <div key={route} className="page-enter">
-          {route === "overview" ? (
-            <Overview />
-          ) : route === "budget" ? (
-            <Budget />
-          ) : route === "income" ? (
-            <Income />
-          ) : route === "expenses" ? (
-            <Expenses />
-          ) : route === "savings" ? (
-            <Savings />
-          ) : (
-            <Profile />
-          )}
-        </div>
-        <footer className="page-footer">
-          <Leaf size={14} />
-          <span>A little planning. More room to live.</span>
-          <button onClick={() => setDialog({ type: "about" })}>
-            About BudgetFlow
-          </button>
-        </footer>
-      </main>
-      <nav className="mobile-nav" aria-label="Mobile navigation">
-        {navigation.map(([path, label, Icon]) => (
-          <button
-            key={path}
-            className={route === path ? "active" : ""}
-            aria-current={route === path ? "page" : undefined}
-            onClick={() => go(path)}
-          >
-            <Icon size={21} strokeWidth={route === path ? 2.2 : 1.7} />
-            <span>
-              {path === "budget"
-                ? "Budget"
-                : path === "income"
-                  ? "Income"
-                  : path === "savings"
-                    ? "Goals"
-                    : label}
-            </span>
-          </button>
-        ))}
-      </nav>
-      {dialog && (
-        <Dialogs
-          key={`${dialog.type}-${"id" in dialog ? dialog.id || "" : ""}`}
-          dialog={dialog}
-          onClose={close}
-        />
-      )}
-      {toast && (
-        <div className="toast" role="status">
-          <CircleCheck size={20} />
-          <span>{toast}</span>
-          <button aria-label="Dismiss message" onClick={() => setToast("")}>
-            <X size={17} />
-          </button>
-        </div>
-      )}
+      </div>
     </Context.Provider>
   );
 }
@@ -1606,9 +1595,20 @@ function Profile() {
       <div className="profile-grid">
         <section className="panel">
           <div className="profile-intro">
-            <span className="avatar big-avatar">
-              {s.profile.name[0].toUpperCase()}
-            </span>
+            <button
+              className="avatar-picker"
+              aria-label={
+                s.profile.avatar ? "Change profile photo" : "Add profile photo"
+              }
+              onClick={() => open({ type: "profile" })}
+            >
+              <span className="avatar big-avatar">
+                <AvatarFace name={s.profile.name} photo={s.profile.avatar} />
+              </span>
+              <span className="avatar-picker-badge">
+                <Camera size={14} />
+              </span>
+            </button>
             <div>
               <h2>{s.profile.name}</h2>
               <p>

@@ -1,7 +1,11 @@
 export type MonthKey = string;
 export type Theme = "light" | "dark" | "system";
 export type Cadence =
-  "once" | "weekly" | "biweekly" | "semimonthly" | "monthly";
+  | "once"
+  | "weekly"
+  | "biweekly"
+  | "semimonthly"
+  | "monthly";
 export type IncomeSource = { id: string; name: string; kind: string };
 export type Paycheck = {
   id: string;
@@ -53,6 +57,7 @@ export type State = {
   selectedMonth: MonthKey;
   profile: {
     name: string;
+    avatar?: string;
     theme: Theme;
     openingSavings: number;
     timezone: string;

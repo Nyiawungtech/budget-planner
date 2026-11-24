@@ -1,4 +1,5 @@
 import type { State } from "./domain";
+import { isAvatarPhoto } from "./profile-photo";
 type ObjectValue = Record<string, unknown>;
 const object = (v: unknown): v is ObjectValue =>
   !!v && typeof v === "object" && !Array.isArray(v);
@@ -36,6 +37,7 @@ export function isState(v: unknown): v is State {
   )
     return false;
   const p = v.profile;
+  if (p.avatar !== undefined && !isAvatarPhoto(p.avatar)) return false;
   if (
     !id(p.name) ||
     !["light", "dark", "system"].includes(p.theme as string) ||

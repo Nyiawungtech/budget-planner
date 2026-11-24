@@ -509,7 +509,7 @@ a {
 }
 .main {
   margin-left: var(--sidebar);
-  padding: 137px 40px 28px;
+  padding: calc(var(--banner) + var(--header) + 25px) 40px 28px;
   min-width: 0;
   min-height: 100vh;
   max-width: 1800px;
@@ -2078,7 +2078,7 @@ select {
 }
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 15px;
 }
 .color-field {
@@ -2769,7 +2769,7 @@ select {
   }
   .main {
     margin-left: 0;
-    padding: 133px 25px 105px;
+    padding: calc(var(--banner) + var(--header) + 25px) 25px 105px;
     max-width: none;
   }
   .brand {
@@ -3248,7 +3248,7 @@ select {
     margin-left: 5px;
   }
   .main {
-    padding: 122px 18px 105px;
+    padding: calc(var(--banner) + var(--header) + 20px) 18px 105px;
   }
   .page-tools {
     margin-bottom: 24px;
@@ -5279,5 +5279,127 @@ button.ghost,
     grid-area: edit;
     width: 32px;
     height: 44px;
+  }
+}
+
+/* Personal plans start at the top; only sample data needs a preview banner. */
+.workspace-personal {
+  --banner: 0px;
+}
+.income-schedule-fields,
+.income-schedule-fields > .field {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+.income-schedule-fields input[type="date"],
+.income-schedule-fields select {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  box-sizing: border-box;
+}
+.income-schedule-fields input[type="date"]::-webkit-date-and-time-value {
+  min-inline-size: 0;
+  text-align: left;
+}
+@media (max-width: 560px) {
+  .income-schedule-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .income-schedule-fields .field input,
+  .income-schedule-fields .field select {
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+  .income-schedule-fields .field select {
+    padding-inline-end: 38px;
+  }
+}
+
+.avatar {
+  overflow: hidden;
+  padding: 0;
+}
+.avatar-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.avatar-picker {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 50%;
+}
+.avatar-picker-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--green);
+  color: var(--on-primary);
+  border: 2px solid var(--panel);
+}
+.profile-photo-field {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  padding: 4px 0 10px;
+}
+.photo-preview {
+  width: 82px;
+  height: 82px;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.photo-controls {
+  flex: 1;
+  min-width: 0;
+}
+.photo-controls > b {
+  font-size: 14px;
+}
+.photo-controls > p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 4px 0 12px;
+}
+.photo-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 15px;
+}
+.photo-buttons .secondary {
+  font-size: 14px;
+  min-height: 44px;
+  padding: 10px 13px;
+}
+.photo-buttons .text-button {
+  font-size: 14px;
+  min-height: 44px;
+}
+.photo-file-input {
+  display: none;
+}
+@media (max-width: 480px) {
+  .profile-photo-field {
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .photo-preview {
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
   }
 }

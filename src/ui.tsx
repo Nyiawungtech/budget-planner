@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   Sprout,
   X,
@@ -23,12 +23,25 @@ export function Brand() {
   return (
     <span className="brand">
       <span className="brand-symbol">
-        <Wallet size={25} strokeWidth={1.8} />
+        <Sprout size={25} strokeWidth={1.8} />
       </span>
       <span>
         Budget<span className="brand-flow">Flow</span>
       </span>
     </span>
+  );
+}
+export function AvatarFace({ name, photo }: { name: string; photo?: string }) {
+  const [failed, setFailed] = useState<string | null>(null);
+  return photo && photo !== failed ? (
+    <img
+      className="avatar-photo"
+      src={photo}
+      alt=""
+      onError={() => setFailed(photo)}
+    />
+  ) : (
+    <>{name.slice(0, 1).toUpperCase()}</>
   );
 }
 export const icons = {

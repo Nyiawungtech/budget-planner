@@ -13,6 +13,7 @@ BudgetFlow uses Supabase Auth in the existing Duewell project (`motuhpcynixmorwo
 - Sample exploration is separate from the authenticated plan.
 - Existing personal browser plans can be explicitly imported from Profile. They are never uploaded automatically.
 - Signed-in financial snapshots are held in memory, not persisted in localStorage or service-worker caches. An offline page reload needs a connection to open the cloud plan.
+- Profile photos are optional JPEG data URLs within the same private snapshot. Uploads are limited to 5 MB, cropped and resized to 384 × 384 in the browser, and re-encoded without source metadata. No public image bucket is used. The snapshot validator rejects external photo URLs, executable formats, and oversized photo values.
 
 ## Deployment configuration
 

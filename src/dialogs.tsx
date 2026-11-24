@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   Plus,
   Pencil,
@@ -9,9 +9,20 @@ import {
   RotateCcw,
   CalendarDays,
   CheckCheck,
+  Camera,
 } from "lucide-react";
 import { useWorkspace } from "./App";
-import { CategoryIcon, Empty, Field, Modal, Progress, icons } from "./ui";
+import {
+  AvatarFace,
+  CategoryIcon,
+  Empty,
+  Field,
+  Modal,
+  Progress,
+  icons,
+} from "./ui";
+import { PHOTO_TYPES, prepareProfilePhoto } from "./lib/profile-photo";
+import { isState } from "./lib/snapshot";
 import {
   blankMonth,
   categorySpent,
@@ -729,7 +740,7 @@ function IncomeForm({ onClose }: DialogProps) {
             />
           </span>
         </Field>
-        <div className="form-grid">
+        <div className="form-grid income-schedule-fields">
           <Field label="First payday">
             <input
               type="date"
@@ -1298,6 +1309,10 @@ function GoalHistory({ dialog, onClose }: DialogProps) {
 
 function ProfileForm({ dialog, onClose }: DialogProps) {
   const { s, edit } = useWorkspace();
+  const [avatar, setAvatar] = useState(s.profile.avatar);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const photoInput = useRef<HTMLInputElement>(null);
   const zones = [
     ...new Set([
       s.profile.timezone,
@@ -1319,17 +1334,101 @@ function ProfileForm({ dialog, onClose }: DialogProps) {
     >
       <Form
         onClose={onClose}
-        label="Save profile"
+        label={photoBusy ? "Preparing photo…" : "Save profile"}
+        disabled={photoBusy}
         onSave={(data) => {
+          if (photoBusy)
+            throw new Error("Wait for your photo to finish preparing.");
           const name = str(data, "name");
           if (!name) throw new Error("What should we call you?");
           const openingSavings = toCents(str(data, "amount"));
           const timezone = str(data, "timezone");
+          const profile = {
+            ...s.profile,
+            name,
+            openingSavings,
+            timezone,
+            avatar,
+          };
+          if (!isState({ ...s, profile }))
+            throw new Error(
+              "Your profile could not be saved. Try a smaller photo.",
+            );
           edit((d) => {
-            Object.assign(d.profile, { name, openingSavings, timezone });
+            d.profile = profile;
           }, "Your profile is up to date.");
         }}
       >
+        <div className="profile-photo-field">
+          <span className="avatar photo-preview">
+            <AvatarFace name={s.profile.name} photo={avatar} />
+          </span>
+          <div className="photo-controls">
+            <b>Profile photo</b>
+            <p>Choose a photo up to 5 MB. We’ll crop it to a square.</p>
+            <div className="photo-buttons">
+              <button
+                type="button"
+                className="secondary"
+                disabled={photoBusy}
+                onClick={() => photoInput.current?.click()}
+              >
+                <Camera size={16} />
+                {photoBusy
+                  ? "Preparing…"
+                  : avatar
+                    ? "Change photo"
+                    : "Choose photo"}
+              </button>
+              {avatar && (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={photoBusy}
+                  onClick={() => {
+                    setAvatar(undefined);
+                    setPhotoError("");
+                  }}
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+            <input
+              ref={photoInput}
+              type="file"
+              accept={PHOTO_TYPES}
+              className="photo-file-input"
+              aria-label="Upload profile photo"
+              disabled={photoBusy}
+              onChange={async (e) => {
+                const input = e.currentTarget;
+                const file = input.files?.[0];
+                if (!file) return;
+                setPhotoBusy(true);
+                setPhotoError("");
+                try {
+                  setAvatar(await prepareProfilePhoto(file));
+                } catch (error) {
+                  setPhotoError(
+                    error instanceof Error
+                      ? error.message
+                      : "This photo could not be opened.",
+                  );
+                } finally {
+                  setPhotoBusy(false);
+                  input.value = "";
+                }
+              }}
+            />
+          </div>
+        </div>
+        {photoError && (
+          <div className="form-error" role="alert">
+            <CircleAlert size={18} />
+            {photoError}
+          </div>
+        )}
         <Field label="What should we call you?">
           <input
             name="name"

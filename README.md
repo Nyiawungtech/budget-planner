@@ -7,7 +7,7 @@ Source repository: https://github.com/Nyiawungtech/budget-planner
 ## Working features
 
 - Email/password accounts, dedicated email verification, login, password recovery, and logout.
-- Profile editing, starting savings, and time-zone settings.
+- Profile photos with upload/removal, profile editing, starting savings, and time-zone settings.
 - Independent monthly plans, with optional budget-category templates.
 - Multiple income sources, scheduled payments, and received-income checkoffs with actual amounts.
 - Category budgets, expense entry/editing, progress indicators, and signed negative balances.
