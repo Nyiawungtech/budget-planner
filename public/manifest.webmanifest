@@ -1,0 +1,38 @@
+{
+  "id": "/",
+  "name": "BudgetFlow — Budget Planner",
+  "short_name": "BudgetFlow",
+  "description": "Plan your income, manage expenses, and grow your savings month by month.",
+  "lang": "en-US",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5faf6",
+  "theme_color": "#b9dfc2",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "My budget", "url": "/budget" },
+    { "name": "Income", "url": "/income" },
+    { "name": "Expenses", "url": "/expenses" }
+  ]
+}
