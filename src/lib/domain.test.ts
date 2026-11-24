@@ -1,9 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { demoState } from "./demo";
 import {
+  blankMonth,
+  blankState,
   categorySpent,
   copyBudgets,
   goalSaved,
+  isCalendarDate,
   monthlyPace,
   savingsPool,
   scheduleDates,
@@ -11,6 +14,7 @@ import {
   monthEnd,
   toCents,
   totals,
+  validateReceiptDate,
 } from "./domain";
 
 describe("a monthly plan that always reconciles", () => {
@@ -129,40 +133,87 @@ describe("a monthly plan that always reconciles", () => {
     next.categories[0].budget = 1;
     expect(old.categories[0].budget).toBe(250000);
   });
+  it.each([
+    ["2026-11", "2026-12-04"],
+    ["2026-12", "2027-01-08"],
+  ])("keeps %s income paid on %s in its original plan and counts it once", (key, payday) => {
+    const s = blankState("Cross-month plan", "UTC");
+    const nextKey = shiftMonth(key, 1);
+    const m = blankMonth(key);
+    s.selectedMonth = key;
+    s.months = { [key]: m, [nextKey]: blankMonth(nextKey) };
+    m.categories.push({
+      id: "rent", name: "Rent", budget: 150000, color: "green", icon: "home",
+    });
+    m.paychecks = scheduleDates(payday, "once", 1).map((date) => ({
+      id: "pay", sourceId: "job", date, expected: 250000,
+      received: null, receivedOn: null, note: "Income for the original plan",
+    }));
+    const p = m.paychecks[0];
+    expect(p.date).toBe(payday);
+    expect(totals(m).savings).toBe(100000);
+    expect(totals(m).received).toBe(0);
+    expect(savingsPool(s).capacity).toBe(0);
+    p.received = 240000;
+    p.receivedOn = payday;
+    expect(totals(m).forecastIncome).toBe(240000);
+    expect(totals(m).received).toBe(240000);
+    expect(savingsPool(s).capacity).toBe(90000);
+    expect(totals(s.months[nextKey]).expected).toBe(0);
+    expect(totals(s.months[nextKey]).received).toBe(0);
+    p.received = 230000;
+    expect(savingsPool(s).capacity).toBe(80000);
+    p.received = null;
+    p.receivedOn = null;
+    expect(savingsPool(s).capacity).toBe(0);
+    expect(totals(m).savings).toBe(100000);
+  });
 });
 describe("paydays, dates, and money", () => {
   it("generates four weekly paychecks and includes month-end paydays", () => {
-    expect(scheduleDates("2026-12-04", "weekly", 4, "2026-12")).toEqual([
+    expect(scheduleDates("2026-12-04", "weekly", 4)).toEqual([
       "2026-12-04",
       "2026-12-11",
       "2026-12-18",
       "2026-12-25",
     ]);
-    expect(scheduleDates("2026-12-31", "weekly", 4, "2026-12")).toEqual([
+    expect(scheduleDates("2026-12-31", "weekly", 4)).toEqual([
       "2026-12-31",
     ]);
   });
   it("supports twice-monthly, biweekly, and single-income schedules", () => {
-    expect(scheduleDates("2026-12-15", "semimonthly", 4, "2026-12")).toEqual([
+    expect(scheduleDates("2026-12-15", "semimonthly", 4)).toEqual([
       "2026-12-15",
       "2026-12-30",
     ]);
-    expect(scheduleDates("2026-12-04", "biweekly", 3, "2026-12")).toEqual([
+    expect(scheduleDates("2026-12-04", "biweekly", 3)).toEqual([
       "2026-12-04",
       "2026-12-18",
     ]);
-    expect(scheduleDates("2026-12-04", "once", 4, "2026-12")).toEqual([
+    expect(scheduleDates("2026-12-04", "once", 4)).toEqual([
       "2026-12-04",
     ]);
-    expect(() =>
-      scheduleDates("2026-12-20", "semimonthly", 2, "2026-12"),
-    ).toThrow();
+    expect(() => scheduleDates("2026-12-20", "semimonthly", 2)).toThrow();
   });
   it("handles year boundaries and leap years using calendar dates", () => {
     expect(shiftMonth("2026-12", 1)).toBe("2027-01");
     expect(shiftMonth("2027-01", -1)).toBe("2026-12");
     expect(monthEnd("2028-02")).toBe("2028-02-29");
     expect(monthEnd("2027-02")).toBe("2027-02-28");
+  });
+  it("validates real paydays without restricting them to a budget month", () => {
+    expect(scheduleDates("2027-01-08", "biweekly", 2)).toEqual(["2027-01-08", "2027-01-22"]);
+    expect(scheduleDates("2028-02-29", "once", 1)).toEqual(["2028-02-29"]);
+    for (const date of ["", "2026-02-29", "2026-12-00", "2026-13-01", "2026-11-31"]) {
+      expect(isCalendarDate(date)).toBe(false);
+      expect(() => scheduleDates(date, "once", 1)).toThrow("valid first payday");
+    }
+  });
+  it("allows actual receipts in another month or year but rejects future and invalid dates", () => {
+    expect(() => validateReceiptDate("2026-12-04", "2026-12-05")).not.toThrow();
+    expect(() => validateReceiptDate("2027-01-08", "2027-01-08")).not.toThrow();
+    expect(() => validateReceiptDate("2026-12-04", "2026-11-30")).toThrow("future");
+    expect(() => validateReceiptDate("2026-11-31", "2026-12-05")).toThrow("valid received date");
   });
   it("stores cents exactly and rejects malformed or fractional-cent amounts", () => {
     expect(toCents("10000")).toBe(1000000);

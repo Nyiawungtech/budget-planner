@@ -125,18 +125,26 @@ export function addDays(date: string, count: number) {
   d.setUTCDate(d.getUTCDate() + count);
   return d.toISOString().slice(0, 10);
 }
+export function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T12:00:00Z`);
+  return (
+    Number.isFinite(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
+  );
+}
+export function validateReceiptDate(date: string, day: string): void {
+  if (!isCalendarDate(date)) throw new Error("Choose a valid received date.");
+  if (date > day) throw new Error("A received date cannot be in the future.");
+}
 export function scheduleDates(
   first: string,
   cadence: Cadence,
   count: number,
-  key: string,
 ): string[] {
-  if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(first) ||
-    first.slice(0, 7) !== key ||
-    first > monthEnd(key)
-  )
-    throw new Error("Choose a valid first payday in this month.");
+  if (!isCalendarDate(first)) throw new Error("Choose a valid first payday.");
+  // The payday month is independent of the budget plan that owns this income.
+  const key = first.slice(0, 7);
   if (!Number.isInteger(count) || count < 1 || count > 31)
     throw new Error("Choose between 1 and 31 paychecks.");
   const dates: string[] = [];

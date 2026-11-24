@@ -31,6 +31,7 @@ import {
   dateLabel,
   dollars,
   goalSaved,
+  isCalendarDate,
   money,
   monthEnd,
   monthLabel,
@@ -40,6 +41,7 @@ import {
   toCents,
   totals,
   uid,
+  validateReceiptDate,
   type Cadence,
 } from "./lib/domain";
 import { demoState } from "./lib/demo";
@@ -644,7 +646,7 @@ function IncomeForm({ onClose }: DialogProps) {
   let previewError = "";
   let previewTotal = 0;
   try {
-    dates = scheduleDates(first, cadence, count, m.key);
+    dates = scheduleDates(first, cadence, count);
     if (amount) previewTotal = toCents(amount) * dates.length;
   } catch (e) {
     previewError = (e as Error).message;
@@ -661,9 +663,7 @@ function IncomeForm({ onClose }: DialogProps) {
         disabled={m.closed}
         onSave={(data) => {
           const value = positive(data);
-          const scheduled = scheduleDates(first, cadence, count, m.key);
-          if (!scheduled.length)
-            throw new Error("No paydays fall in this month.");
+          const scheduled = scheduleDates(first, cadence, count);
           let sourceId = source;
           let newSource = null;
           if (source === "_new") {
@@ -741,13 +741,14 @@ function IncomeForm({ onClose }: DialogProps) {
           </span>
         </Field>
         <div className="form-grid income-schedule-fields">
-          <Field label="First payday">
+          <Field
+            label="First payday"
+            hint="Can be in a different month from your plan."
+          >
             <input
               type="date"
               value={first}
               onChange={(e) => setFirst(e.target.value)}
-              min={`${m.key}-01`}
-              max={monthEnd(m.key)}
               required
             />
           </Field>
@@ -767,7 +768,7 @@ function IncomeForm({ onClose }: DialogProps) {
         {cadence !== "once" && (
           <Field
             label="Number of paychecks to generate"
-            hint="Only dates in this month are added. Create each month’s plan separately."
+            hint="Only dates in the first payday’s calendar month are added. The preview shows exactly what will be saved."
           >
             <input
               type="number"
@@ -793,8 +794,8 @@ function IncomeForm({ onClose }: DialogProps) {
           <div className="schedule-preview">
             <div className="row between">
               <b>
-                {dates.length} {dates.length === 1 ? "payday" : "paydays"} in
-                this month
+                {dates.length} {dates.length === 1 ? "payday" : "paydays"} in{" "}
+                {monthLabel(first.slice(0, 7), true)}
               </b>
               <strong>{cash(previewTotal)}</strong>
             </div>
@@ -802,12 +803,13 @@ function IncomeForm({ onClose }: DialogProps) {
               {dates.map((date) => (
                 <span key={date}>
                   <CalendarDays size={13} />
-                  {dateLabel(date)}
+                  {dateLabel(date, true)}
                 </span>
               ))}
             </div>
             <small>
-              All begin as expected income. Check them off when received.
+              Counts toward your {monthLabel(m.key)} plan, even if received in
+              another month. Check off each payday when the money arrives.
             </small>
           </div>
         )}
@@ -885,7 +887,8 @@ function PaycheckForm({ dialog, onClose }: DialogProps) {
         onSave={(data) => {
           const expected = positive(data);
           const date = str(data, "date");
-          inMonth(date, m.key);
+          if (!isCalendarDate(date))
+            throw new Error("Choose a valid planned payday.");
           edit((d) => {
             const item = d.months[m.key].paychecks.find((x) => x.id === p.id)!;
             Object.assign(item, {
@@ -909,13 +912,14 @@ function PaycheckForm({ dialog, onClose }: DialogProps) {
         <Field label="Expected amount">
           <Amount cents={p.expected} />
         </Field>
-        <Field label="Planned payday">
+        <Field
+          label="Planned payday"
+          hint={`Stays in your ${monthLabel(m.key)} plan, even with a different payday month.`}
+        >
           <input
             type="date"
             name="date"
             required
-            min={`${m.key}-01`}
-            max={monthEnd(m.key)}
             defaultValue={p.date}
           />
         </Field>
@@ -948,19 +952,17 @@ function ReceiveForm({ dialog, onClose }: DialogProps) {
   const p = m.paychecks.find((x) => x.id === dialog.id);
   if (!p) return null;
   const received = p.received !== null;
-  const futureMonth = m.key > day.slice(0, 7);
-  const maxDate = day < monthEnd(m.key) ? day : monthEnd(m.key);
-  const receiptDate = p.receivedOn || (futureMonth ? `${m.key}-01` : maxDate);
+  const receiptDate = p.receivedOn || day;
   return (
     <Modal
       title={received ? "Your payday, checked off." : "Payday has arrived."}
-      subtitle={`${s.sources.find((x) => x.id === p.sourceId)?.name} · Scheduled ${dateLabel(p.date)}`}
+      subtitle={`${s.sources.find((x) => x.id === p.sourceId)?.name} · Scheduled ${dateLabel(p.date, true)}`}
       onClose={onClose}
     >
       <Form
         label={received ? "Update receipt" : "Mark as received"}
         onClose={onClose}
-        disabled={m.closed || futureMonth}
+        disabled={m.closed}
         extra={
           received && (
             <button
@@ -975,9 +977,7 @@ function ReceiveForm({ dialog, onClose }: DialogProps) {
         onSave={(data) => {
           const amount = positive(data);
           const date = str(data, "date");
-          inMonth(date, m.key);
-          if (date > day)
-            throw new Error("A received date cannot be in the future.");
+          validateReceiptDate(date, day);
           edit(
             (d) => {
               const item = d.months[m.key].paychecks.find(
@@ -996,15 +996,6 @@ function ReceiveForm({ dialog, onClose }: DialogProps) {
           <span>Expected paycheck</span>
           <b>{cash(p.expected)}</b>
         </div>
-        {futureMonth && (
-          <div className="notice">
-            <CalendarDays size={18} />
-            <p>
-              You can record received income when this month begins. Edit the
-              planned payday if it belongs to an earlier month.
-            </p>
-          </div>
-        )}
         <Field label="Amount actually received">
           <Amount cents={p.received ?? p.expected} />
         </Field>
@@ -1014,13 +1005,13 @@ function ReceiveForm({ dialog, onClose }: DialogProps) {
             name="date"
             required
             defaultValue={receiptDate}
-            min={`${m.key}-01`}
-            max={maxDate}
+            max={day}
           />
         </Field>
         <div className="soft-box small">
-          Your forecast uses the actual amount after you check it off. Editing a
-          receipt replaces the previous amount, so it is never counted twice.
+          This receipt counts toward your {monthLabel(m.key)} plan, even if the
+          money arrived in another month. Your forecast uses the actual amount.
+          Editing a receipt replaces it, so it is never counted twice.
         </div>
       </Form>
     </Modal>

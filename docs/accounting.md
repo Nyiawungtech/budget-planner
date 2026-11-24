@@ -29,9 +29,9 @@ Reducing a category budget below spending does not erase an expense. Its commitm
 
 Checking a payday opens actual amount and receipt date. Receipt fields replace one paycheck’s receipt; they do not append a second copy. Undoing returns it to estimated income. A lower actual receipt reduces the forecast immediately, even if the original scheduled estimate is retained for comparison.
 
-The concept groups paychecks by their selected planning month. Receipt dates must be in that month and not in the future according to the workspace date. A paycheck paid in another month should be rescheduled into the correct plan before recording it. Production must preserve the relationship between the originally expected payday and the actual receipt month; this is an explicit backend acceptance requirement.
+Each paycheck belongs to the planning month where it was added. Its planned payday and actual receipt date may be in a different month or year. For example, November income can have a December 4 payday and a December 5 receipt. Both dates are preserved, and the income remains in November's budget and balances; no second entry is created in December. Received totals are receipts for that plan, not a calendar-month bank statement. Only real calendar dates are accepted, and a receipt cannot be dated in the future according to the workspace date. A closed plan must be reopened before adding or updating a receipt.
 
-Payday generation adds only dates in the selected month and shows the exact count and total before saving. Twice-monthly generation uses a first day from 1–15 and a second day 15 days later. Future months are created and planned independently. Monthly category templates do not copy receipts, spending, or paychecks.
+Payday generation uses the first payday's calendar month, independently of the selected planning month, and shows the exact dates, count and total before saving. Only dates within that payday month are generated in one batch; a separate batch can add more dates to the same plan. Twice-monthly generation uses a first day from 1–15 and a second day 15 days later. Monthly category templates do not copy receipts, spending, or paychecks. Pending cross-month income affects the owning plan's forecast but cannot fund confirmed savings or goals until marked received; corrections and undo update the same receipt.
 
 ## Savings and goals
 

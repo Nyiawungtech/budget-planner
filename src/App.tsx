@@ -1060,13 +1060,20 @@ export function PaycheckRow({
   const source = s.sources.find((x) => x.id === p.sourceId);
   const received = p.received !== null;
   const late = !received && p.date < day;
+  const differentYear = p.date.slice(0, 4) !== m.key.slice(0, 4);
+  const paydayLabel = dateLabel(p.date, differentYear);
+  const receiptDay = p.receivedOn || p.date;
+  const receiptLabel = dateLabel(
+    receiptDay,
+    receiptDay.slice(0, 4) !== m.key.slice(0, 4),
+  );
   return (
     <div
       className={`paycheck-row ${compact ? "compact-paycheck" : ""} ${received ? "is-received" : ""}`}
     >
       <button
         className={`paycheck-check ${received ? "checked" : ""}`}
-        aria-label={`${received ? "View received" : "Mark received"}: ${source?.name || "Income"}, ${dateLabel(p.date)}`}
+        aria-label={`${received ? "View received" : "Mark received"}: ${source?.name || "Income"}, ${paydayLabel}`}
         aria-pressed={received}
         disabled={m.closed}
         onClick={() => open({ type: "receive", id: p.id })}
@@ -1088,7 +1095,7 @@ export function PaycheckRow({
         <b>{source?.name || "Income"}</b>
         <span>
           {compact
-            ? dateLabel(p.date)
+            ? paydayLabel
             : p.note || "Make a plan for this payday"}
         </span>
         {!compact && (
@@ -1097,10 +1104,10 @@ export function PaycheckRow({
           >
             {received ? <CircleCheck size={13} /> : <Clock3 size={13} />}
             {received
-              ? `Received ${dateLabel(p.receivedOn || p.date)}`
+              ? `Received ${receiptLabel}`
               : late
-                ? "Awaiting receipt"
-                : `Scheduled for ${dateLabel(p.date)}`}
+                ? `Awaiting receipt${differentYear ? ` · ${paydayLabel}` : ""}`
+                : `Scheduled for ${paydayLabel}`}
           </span>
         )}
       </div>
@@ -1116,7 +1123,7 @@ export function PaycheckRow({
         <button
           className="icon-button"
           disabled={m.closed}
-          aria-label={`Edit ${source?.name || "income"} paycheck ${dateLabel(p.date)}`}
+          aria-label={`Edit ${source?.name || "income"} paycheck ${paydayLabel}`}
           onClick={() => open({ type: "paycheck", id: p.id })}
         >
           <Pencil size={17} />
@@ -1155,7 +1162,8 @@ function Income() {
           </button>
         }
       >
-        Plan each paycheck. Check it off when the money arrives.
+        Income in this plan can arrive in another month. Check it off when the
+        money arrives.
       </PageHeading>
       <div className="stats-grid">
         <Stat

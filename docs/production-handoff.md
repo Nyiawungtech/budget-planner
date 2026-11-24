@@ -8,6 +8,7 @@ BudgetFlow uses Supabase Auth in the existing Duewell project (`motuhpcynixmorwo
 - Logout in Profile, with pending writes flushed before the session is revoked using local scope.
 - Owner-only cloud plans in `public.budgetflow_workspaces`, guarded by row-level security and a verified, active Auth session.
 - All financial records in one versioned snapshot per user. Existing domain calculations remain the single source of balances.
+- Planned paydays and actual receipt dates can fall outside their owning budget month, including the next year. Income and its receipt stay in the original plan and are never copied into the payday month's plan; future receipts remain blocked. See `accounting.md` for the plan-based balances.
 - Serialized, idempotent saves with revision checks, visible save state, retry, and explicit conflict resolution.
 - Idle clients reload newer data on focus and every 30 seconds while visible. Edits already in progress are never silently replaced.
 - Sample exploration is separate from the authenticated plan.
@@ -40,4 +41,3 @@ The database migration in `supabase/migrations` was applied to the connected pro
 - A user-performed signup, confirmation, recovery and login/logout smoke test on the production origin.
 - Account deletion designed for the shared identity (deleting an Auth identity would affect Settle Up).
 - Physical-device accessibility, install, keyboard and offline checks; Capacitor app packaging, signing and store distribution.
-- Cross-month receipt accounting review before expanding the existing budget model.
